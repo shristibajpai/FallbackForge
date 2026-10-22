@@ -31,6 +31,10 @@ Instead of treating every failed API request as the end of a workflow, FallbackF
 
 ## 🌟 Overview
 
+<img width="959" height="407" alt="image" src="https://github.com/user-attachments/assets/a6b6dd36-19ba-4193-88ea-234faa1b6cb0" />
+
+<img width="949" height="413" alt="image" src="https://github.com/user-attachments/assets/8fd8f201-1bb8-4b11-8703-c0950d8ec1c1" />
+
 Modern applications depend on APIs, but APIs can fail because of network issues, rate limits, service outages, timeouts, and unexpected responses.
 
 FallbackForge explores a structured approach to API recovery by combining a frontend interface, a FastAPI backend, configurable recovery options, and an AI integration using Ollama Cloud with Gemma 4.
