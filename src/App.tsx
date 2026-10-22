@@ -20,6 +20,12 @@ import {
   SettingsConfig
 } from './types';
 import {
+  ApiFailureType,
+  ApiFallbackStrategy,
+  RecoveryPlanResponse,
+  generateRecoveryPlan as requestRecoveryPlan
+} from './api';
+import {
   INITIAL_HISTORY_RECORDS,
   INITIAL_SKILL_DATA,
   generateRecoveryPlan
@@ -30,8 +36,22 @@ const DEFAULT_CONFIG: RecoveryPlanConfig = {
   serviceDescription: 'Inbound asynchronous payment capture and subscription renewal webhook pipeline.',
   failureType: '429 Rate Limit (Too Many Requests)',
   maxRetries: 3,
-  fallbackStrategy: 'Exponential Backoff + Full Jitter',
+  fallbackStrategy: 'Stale Cache Degradation',
   respectRetryAfter: true
+};
+
+const API_FAILURE_TYPES: Partial<Record<RecoveryPlanConfig['failureType'], ApiFailureType>> = {
+  '429 Rate Limit (Too Many Requests)': 'rate_limit',
+  '504 Gateway Timeout': 'timeout',
+  '500 Internal Server Error': 'server_error',
+  'Invalid Response': 'invalid_response'
+};
+
+const API_FALLBACK_STRATEGIES: Partial<Record<RecoveryPlanConfig['fallbackStrategy'], ApiFallbackStrategy>> = {
+  'Stale Cache Degradation': 'cached_response',
+  'Secondary Mirror Failover': 'secondary_provider',
+  'Graceful Degradation': 'graceful_degradation',
+  'Fail Safely': 'fail_safely'
 };
 
 export default function App() {
@@ -45,12 +65,14 @@ export default function App() {
   const [activePlan, setActivePlan] = useState<RecoveryPlan | null>(() =>
     generateRecoveryPlan(DEFAULT_CONFIG, true)
   );
+  const [backendResponse, setBackendResponse] = useState<RecoveryPlanResponse | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>(INITIAL_HISTORY_RECORDS);
   const [isGenerating, setIsGenerating] = useState(false);
   const [settings, setSettings] = useState<SettingsConfig>({
-    ollamaConnected: true,
-    ollamaModel: 'gemma2:9b',
-    ollamaUrl: 'http://localhost:11434',
+    ollamaConnected: false,
+    ollamaModel: 'gemma4',
+    ollamaUrl: 'https://ollama.com/api/chat',
     demoMode: true,
     activeTheme: theme === 'dark' ? 'Monochrome + Sage Green (Dark)' : 'Monochrome + Sage Green (Light)',
     theme: theme,
@@ -82,27 +104,57 @@ export default function App() {
 
   const handleGeneratePlan = async (config: RecoveryPlanConfig) => {
     setIsGenerating(true);
-    // Simulate generation latency (local Gemma / Deterministic synthesizer)
-    await new Promise((r) => setTimeout(r, 650));
+    setGenerationError(null);
+    const requestStartedAt = performance.now();
+    try {
+      const failureType = API_FAILURE_TYPES[config.failureType];
+      const fallbackStrategy = API_FALLBACK_STRATEGIES[config.fallbackStrategy];
+      if (!failureType || !fallbackStrategy) {
+        throw new Error('Choose a supported failure type and fallback strategy.');
+      }
 
-    const newPlan = generateRecoveryPlan(config, settings.demoMode);
-    setActivePlan(newPlan);
+      const response = await requestRecoveryPlan({
+        service_name: config.serviceName,
+        service_description: config.serviceDescription,
+        failure_type: failureType,
+        max_retries: config.maxRetries,
+        fallback_strategy: fallbackStrategy,
+        respect_retry_after: config.respectRetryAfter
+      });
+      setBackendResponse(response);
+      setSettings((prev) => ({
+        ...prev,
+        ollamaConnected: response.ai_mode === 'ollama_cloud',
+        demoMode: response.ai_mode === 'demo_mode'
+      }));
 
-    // Automatically append to history
-    const newRecord: HistoryRecord = {
-      id: 'rec-' + Math.floor(1000 + Math.random() * 9000),
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      serviceName: config.serviceName || 'Target Service API',
-      failureType: config.failureType,
-      strategy: config.fallbackStrategy,
-      result: 'RECOVERED',
-      retriesUsed: Math.min(2, config.maxRetries),
-      latencyMs: Math.floor(400 + Math.random() * 800),
-      planSummary: `Synthesized plan addressing ${config.failureType} using ${config.fallbackStrategy}. Verified idempotency and jitter constraints.`
-    };
-
-    setHistoryRecords((prev) => [newRecord, ...prev]);
-    setIsGenerating(false);
+      const result: HistoryRecord['result'] =
+        response.simulation.outcome === 'recovered'
+          ? 'RECOVERED'
+          : response.simulation.outcome === 'degraded'
+            ? 'DEGRADED_CACHE'
+            : 'FAILED_SAFELY';
+      const newRecord: HistoryRecord = {
+        id: 'rec-' + Math.floor(1000 + Math.random() * 9000),
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        serviceName: response.service_name,
+        failureType: config.failureType,
+        strategy: config.fallbackStrategy,
+        result,
+        retriesUsed: response.simulation.attempts,
+        latencyMs: Math.round(performance.now() - requestStartedAt),
+        planSummary: response.diagnosis
+      };
+      setHistoryRecords((prev) => [newRecord, ...prev]);
+    } catch (error) {
+      setGenerationError(
+        error instanceof Error
+          ? error.message
+          : 'The recovery plan could not be generated. Please try again.'
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleRunSimulation = (config: RecoveryPlanConfig) => {
@@ -156,10 +208,11 @@ export default function App() {
               planConfig={planConfig}
               onChangeConfig={setPlanConfig}
               activePlan={activePlan}
+              backendResponse={backendResponse}
+              errorMessage={generationError}
               onGeneratePlan={handleGeneratePlan}
               onRunSimulation={handleRunSimulation}
               isGenerating={isGenerating}
-              demoMode={settings.demoMode}
             />
           )}
 

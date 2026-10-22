@@ -5,14 +5,17 @@ export type FailureType =
   | '504 Gateway Timeout'
   | '500 Internal Server Error'
   | '503 Service Unavailable'
-  | 'Connection Refused (ECONNREFUSED)';
+  | 'Connection Refused (ECONNREFUSED)'
+  | 'Invalid Response';
 
 export type FallbackStrategy = 
   | 'Exponential Backoff + Full Jitter'
   | 'Stale Cache Degradation'
   | 'Circuit Breaker (Half-Open Probe)'
   | 'Secondary Mirror Failover'
-  | 'Asynchronous Dead Letter Queue';
+  | 'Asynchronous Dead Letter Queue'
+  | 'Graceful Degradation'
+  | 'Fail Safely';
 
 export interface RecoveryPlanConfig {
   serviceName: string;
@@ -95,7 +98,7 @@ export interface HistoryRecord {
   serviceName: string;
   failureType: FailureType;
   strategy: FallbackStrategy;
-  result: 'RECOVERED' | 'DEGRADED_CACHE' | 'CIRCUIT_OPEN' | 'FAILOVER_SUCCESS';
+  result: 'RECOVERED' | 'DEGRADED_CACHE' | 'CIRCUIT_OPEN' | 'FAILOVER_SUCCESS' | 'FAILED_SAFELY';
   retriesUsed: number;
   latencyMs: number;
   planSummary: string;
@@ -126,4 +129,3 @@ export interface SettingsConfig {
   theme: 'dark' | 'light';
   lastTestedAt: string | null;
 }
-

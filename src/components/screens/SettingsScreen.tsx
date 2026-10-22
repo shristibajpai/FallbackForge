@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Cpu,
   RotateCw,
@@ -9,6 +9,7 @@ import {
   Moon
 } from 'lucide-react';
 import { SettingsConfig } from '../../types';
+import { getOllamaStatus, OllamaStatus, testOllamaConnection } from '../../api';
 
 interface SettingsScreenProps {
   settings: SettingsConfig;
@@ -25,23 +26,54 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+  const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [clearedNotice, setClearedNotice] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getOllamaStatus()
+      .then((status) => {
+        if (!active) return;
+        setOllamaStatus(status);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setStatusError(
+          error instanceof Error ? error.message : 'Could not load Ollama configuration.'
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleTestConnection = async () => {
     setTesting(true);
     setTestResult(null);
-
-    // Simulate authentic connection probe to Ollama endpoint
-    await new Promise(r => setTimeout(r, 800));
-
-    setTesting(false);
-    const nowTime = new Date().toTimeString().split(' ')[0];
-    onUpdateSettings({
-      ...settings,
-      ollamaConnected: true,
-      lastTestedAt: nowTime
-    });
-    setTestResult(`Successfully verified model ${settings.ollamaModel} at ${settings.ollamaUrl} [200 OK]`);
+    setTestError(null);
+    try {
+      const result = await testOllamaConnection();
+      const nowTime = new Date().toTimeString().split(' ')[0];
+      onUpdateSettings({
+        ...settings,
+        ollamaConnected: result.connected,
+        ollamaModel: result.model,
+        ollamaUrl: ollamaStatus?.url ?? settings.ollamaUrl,
+        demoMode: !result.connected,
+        lastTestedAt: nowTime
+      });
+      setOllamaStatus((status) => status ? { ...status, model: result.model, api_key_configured: true } : status);
+      setTestResult(`Connected to ${result.provider} using model ${result.model}.`);
+    } catch (error) {
+      onUpdateSettings({ ...settings, ollamaConnected: false, demoMode: true });
+      setTestError(
+        error instanceof Error ? error.message : 'Ollama Cloud connection test failed.'
+      );
+    } finally {
+      setTesting(false);
+    }
   };
 
   const handleResetData = () => {
@@ -80,7 +112,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 Model Configuration
               </h2>
             </div>
-            <span className="text-[10px] font-mono text-[var(--text-muted)]">LOCAL RUNTIME</span>
+            <span className="text-[10px] font-mono text-[var(--text-muted)]">BACKEND CONFIGURATION</span>
           </div>
 
           {/* Connection Status Badge */}
@@ -90,15 +122,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 Ollama Connection Status
               </span>
               <div className="flex items-center gap-2 text-xs font-mono">
-                <span className={`w-2 h-2 rounded-full ${settings.demoMode ? 'bg-[var(--text-muted)]' : 'bg-[var(--accent)]'}`} />
+                <span className={`w-2 h-2 rounded-full ${settings.ollamaConnected ? 'bg-[var(--accent)]' : 'bg-[var(--text-muted)]'}`} />
                 <span className="text-[var(--text-primary)] font-medium">
-                  {settings.demoMode ? 'Demo Mode (Deterministic Plan Synthesizer)' : 'Connected to Ollama Local Host'}
+                  {settings.ollamaConnected
+                    ? 'Connected to Ollama Cloud'
+                    : testError
+                      ? 'Ollama Cloud connection failed'
+                      : ollamaStatus
+                        ? ollamaStatus.api_key_configured
+                          ? 'API key configured; connection not tested'
+                          : 'API key missing; configure Backend/.env'
+                        : statusError ?? 'Checking backend Ollama configuration...'}
                 </span>
               </div>
             </div>
 
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--accent)] font-semibold">
-              {settings.demoMode ? 'DEMO' : 'ACTIVE'}
+              {settings.ollamaConnected
+                ? 'CONNECTED'
+                : testError
+                  ? 'ERROR'
+                  : ollamaStatus?.api_key_configured
+                    ? 'KEY READY'
+                    : ollamaStatus
+                      ? 'NO KEY'
+                      : 'CHECKING'}
             </span>
           </div>
 
@@ -109,13 +157,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </label>
             <input
               type="text"
-              value={settings.ollamaModel}
-              onChange={(e) => onUpdateSettings({ ...settings, ollamaModel: e.target.value })}
-              placeholder="e.g. gemma2:9b"
+              value={ollamaStatus?.model ?? settings.ollamaModel}
+              readOnly
               className="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-[var(--accent)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none font-mono transition-colors"
             />
             <span className="text-[11px] text-[var(--text-muted)]">
-              Recommended: <code className="text-[var(--accent)]">gemma2:9b</code> or <code className="text-[var(--accent)]">gemma:7b</code>
+            Set <code className="text-[var(--accent)]">OLLAMA_MODEL</code> in Backend/.env to change the backend model.
             </span>
           </div>
 
@@ -126,12 +173,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </label>
             <input
               type="text"
-              value={settings.ollamaUrl}
-              onChange={(e) => onUpdateSettings({ ...settings, ollamaUrl: e.target.value })}
-              placeholder="http://localhost:11434"
+              value={ollamaStatus?.url ?? settings.ollamaUrl}
+              readOnly
               className="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-[var(--accent)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none font-mono transition-colors"
             />
           </div>
+          <p className="text-[11px] text-[var(--text-muted)]">
+          Keep <code className="text-[var(--accent)]">OLLAMA_API_KEY</code> in Backend/.env. It is sent only by FastAPI and is never exposed to the browser.
+          </p>
 
           {/* Test Connection Button */}
           <div className="space-y-2 pt-2">
@@ -157,6 +206,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--accent)]/30 text-xs font-mono text-[var(--accent)] flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{testResult}</span>
+              </div>
+            )}
+            {testError && (
+              <div role="alert" className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--accent)]/30 text-xs font-mono text-[var(--text-primary)]">
+                {testError}
               </div>
             )}
           </div>

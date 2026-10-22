@@ -71,9 +71,9 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
       <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 flex items-center justify-between text-xs shadow-2xs">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-[var(--accent)]" />
-          <span className="text-[var(--text-primary)] font-medium">DEMO RECORDS IDENTIFIED</span>
+          <span className="text-[var(--text-primary)] font-medium">RECOVERY RUNS</span>
           <span className="text-[var(--text-muted)]">·</span>
-          <span className="text-[var(--text-secondary)]">Sample diagnostic runs for representative distributed failure modes.</span>
+          <span className="text-[var(--text-secondary)]">Generated plans and simulation results, including sample records.</span>
         </div>
         <span className="text-[10px] font-mono text-[var(--text-muted)]">{historyRecords.length} ENTRIES</span>
       </div>
@@ -105,6 +105,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
             <option value="DEGRADED_CACHE">Degraded Cache</option>
             <option value="CIRCUIT_OPEN">Circuit Open</option>
             <option value="FAILOVER_SUCCESS">Failover Replica</option>
+            <option value="FAILED_SAFELY">Failed Safely</option>
           </select>
         </div>
       </div>

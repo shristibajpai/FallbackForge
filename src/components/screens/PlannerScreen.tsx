@@ -8,41 +8,42 @@ import {
   Code2
 } from 'lucide-react';
 import { FailureType, FallbackStrategy, RecoveryPlan, RecoveryPlanConfig } from '../../types';
+import { RecoveryPlanResponse } from '../../api';
 
 interface PlannerScreenProps {
   planConfig: RecoveryPlanConfig;
   onChangeConfig: (newConfig: RecoveryPlanConfig) => void;
   activePlan: RecoveryPlan | null;
+  backendResponse: RecoveryPlanResponse | null;
+  errorMessage: string | null;
   onGeneratePlan: (config: RecoveryPlanConfig) => void;
   onRunSimulation: (config: RecoveryPlanConfig) => void;
   isGenerating: boolean;
-  demoMode: boolean;
 }
 
-const FAILURE_TYPES: FailureType[] = [
-  '429 Rate Limit (Too Many Requests)',
-  '504 Gateway Timeout',
-  '500 Internal Server Error',
-  '503 Service Unavailable',
-  'Connection Refused (ECONNREFUSED)'
+const FAILURE_TYPES: { value: FailureType; label: string }[] = [
+  { value: '429 Rate Limit (Too Many Requests)', label: '429 Rate Limit (Too Many Requests)' },
+  { value: '504 Gateway Timeout', label: '504 Gateway Timeout' },
+  { value: '500 Internal Server Error', label: '500 Internal Server Error' },
+  { value: 'Invalid Response', label: 'Invalid Response' }
 ];
 
-const FALLBACK_STRATEGIES: FallbackStrategy[] = [
-  'Exponential Backoff + Full Jitter',
-  'Stale Cache Degradation',
-  'Circuit Breaker (Half-Open Probe)',
-  'Secondary Mirror Failover',
-  'Asynchronous Dead Letter Queue'
+const FALLBACK_STRATEGIES: { value: FallbackStrategy; label: string }[] = [
+  { value: 'Stale Cache Degradation', label: 'Cached Response' },
+  { value: 'Secondary Mirror Failover', label: 'Secondary Provider' },
+  { value: 'Graceful Degradation', label: 'Graceful Degradation' },
+  { value: 'Fail Safely', label: 'Fail Safely' }
 ];
 
 export const PlannerScreen: React.FC<PlannerScreenProps> = ({
   planConfig,
   onChangeConfig,
   activePlan,
+  backendResponse,
+  errorMessage,
   onGeneratePlan,
   onRunSimulation,
-  isGenerating,
-  demoMode
+  isGenerating
 }) => {
   const [copied, setCopied] = useState(false);
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>({});
@@ -100,7 +101,11 @@ export const PlannerScreen: React.FC<PlannerScreenProps> = ({
           <span className="text-[var(--text-muted)] font-mono text-[10px] uppercase">AI Mode</span>
           <div className="font-mono text-[var(--text-secondary)] flex items-center gap-1.5 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-            <span className="truncate">{demoMode ? 'Deterministic Engine (Demo)' : 'Ollama Gemma 2'}</span>
+            <span className="truncate">
+              {backendResponse
+                ? backendResponse.ai_mode === 'ollama_cloud' ? 'Ollama Cloud' : 'Demo mode'
+                : activePlan ? 'Demo preview (not backend)' : 'Awaiting API response'}
+            </span>
           </div>
         </div>
       </div>
@@ -155,8 +160,8 @@ export const PlannerScreen: React.FC<PlannerScreenProps> = ({
               className="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-[var(--accent)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none transition-colors font-mono cursor-pointer"
             >
               {FAILURE_TYPES.map((ft) => (
-                <option key={ft} value={ft} className="bg-[var(--bg-panel)] text-[var(--text-primary)]">
-                  {ft}
+                <option key={ft.value} value={ft.value} className="bg-[var(--bg-panel)] text-[var(--text-primary)]">
+                  {ft.label}
                 </option>
               ))}
             </select>
@@ -172,17 +177,17 @@ export const PlannerScreen: React.FC<PlannerScreenProps> = ({
             </div>
             <input
               type="range"
-              min={1}
-              max={10}
+              min={0}
+              max={5}
               step={1}
               value={planConfig.maxRetries}
               onChange={(e) => onChangeConfig({ ...planConfig, maxRetries: parseInt(e.target.value) })}
               className="w-full accent-[var(--accent)] bg-[var(--border-subtle)] h-1.5 rounded-lg cursor-pointer"
             />
             <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
-              <span>1 (Fast Fail)</span>
-              <span>5 (Standard)</span>
-              <span>10 (Aggressive)</span>
+              <span>0 (No Retries)</span>
+              <span>3 (Standard)</span>
+              <span>5 (Maximum)</span>
             </div>
           </div>
 
@@ -197,8 +202,8 @@ export const PlannerScreen: React.FC<PlannerScreenProps> = ({
               className="w-full bg-[var(--bg-input)] border border-[var(--border-subtle)] focus:border-[var(--accent)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none transition-colors font-mono cursor-pointer"
             >
               {FALLBACK_STRATEGIES.map((strat) => (
-                <option key={strat} value={strat} className="bg-[var(--bg-panel)] text-[var(--text-primary)]">
-                  {strat}
+                <option key={strat.value} value={strat.value} className="bg-[var(--bg-panel)] text-[var(--text-primary)]">
+                  {strat.label}
                 </option>
               ))}
             </select>
@@ -254,12 +259,80 @@ export const PlannerScreen: React.FC<PlannerScreenProps> = ({
               <Play className="w-3.5 h-3.5 text-[var(--accent)]" />
               <span>Run Simulation</span>
             </button>
+            {errorMessage && (
+              <p role="alert" className="rounded-lg border border-[var(--accent)]/40 bg-[var(--bg-elevated)] px-3 py-2 text-xs text-[var(--text-primary)]">
+                {errorMessage}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Right Column: Recovery Analysis Output (7 cols) */}
         <div className="lg:col-span-7 space-y-5">
-          {activePlan ? (
+          {backendResponse ? (
+            <div className="space-y-5">
+              <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 flex items-center justify-between shadow-2xs">
+                <div className="space-y-1">
+                  <h2 className="text-sm font-semibold text-[var(--text-primary)] tracking-tight">
+                    Active Recovery Specification
+                  </h2>
+                  <div className="text-xs text-[var(--text-muted)] font-mono">
+                    {backendResponse.service_name} · Mode: {backendResponse.ai_mode === 'ollama_cloud' ? 'Ollama Cloud' : 'Demo mode'}
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--accent)] font-semibold">
+                  {backendResponse.skill_loaded ? 'SKILL LOADED' : 'NO SKILL FILE'}
+                </span>
+              </div>
+
+              <section className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-5 space-y-3 shadow-2xs">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] border-b border-[var(--border-subtle)] pb-2.5">
+                  Failure Diagnosis
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
+                  {backendResponse.diagnosis}
+                </p>
+              </section>
+
+              <section className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-5 space-y-3 shadow-2xs">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] border-b border-[var(--border-subtle)] pb-2.5">
+                  Recovery Plan
+                </h3>
+                <pre className="text-xs text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap font-sans">
+                  {backendResponse.recovery_plan}
+                </pre>
+              </section>
+
+              <section className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-5 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2.5">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">Simulation Event Log</h3>
+                  <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                    {backendResponse.simulation.events.length} EVENTS
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {backendResponse.simulation.events.map((event, index) => (
+                    <div
+                      key={`${event.stage}-${index}`}
+                      className="rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] p-3 space-y-1"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono uppercase">
+                        <span className="text-[var(--accent)]">{event.stage}</span>
+                        <span className="text-[var(--text-muted)]">{event.status}</span>
+                        {event.attempt !== undefined && (
+                          <span className="text-[var(--text-muted)]">Attempt {event.attempt}</span>
+                        )}
+                        {event.delay_seconds !== undefined && (
+                          <span className="text-[var(--text-muted)]">{event.delay_seconds}s delay</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{event.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          ) : activePlan ? (
             <div className="space-y-5">
               {/* Plan Metadata Strip */}
               <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 flex items-center justify-between shadow-2xs">
