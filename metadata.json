@@ -1,0 +1,6 @@
+{
+  "name": "FallbackForge",
+  "description": "AI-powered API failure recovery planner. Diagnose failures, plan recovery, simulate outcomes, and keep services resilient.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
