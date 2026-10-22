@@ -1,0 +1,134 @@
+{
+  "Backend/__init__.py": {
+    "mtime": 1792662683.996435,
+    "seen": 1792668871.123451,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "Backend/main.py": {
+    "mtime": 1792666430.0887654,
+    "seen": 1792668871.1234665,
+    "ast_hash": "d6d95fc92c5771e5c35f81299ca18e68",
+    "semantic_hash": "d6d95fc92c5771e5c35f81299ca18e68"
+  },
+  "Backend/ollama_client.py": {
+    "mtime": 1792667626.851898,
+    "seen": 1792668871.123474,
+    "ast_hash": "e257bd036a4b92495120550032abc152",
+    "semantic_hash": "e257bd036a4b92495120550032abc152"
+  },
+  "Backend/recovery.py": {
+    "mtime": 1792661380.1357603,
+    "seen": 1792668871.1234794,
+    "ast_hash": "5948bd5cddf044b1bc2c4856f33005bd",
+    "semantic_hash": "5948bd5cddf044b1bc2c4856f33005bd"
+  },
+  "FallbackForge/metadata.json": {
+    "mtime": 1792663210.5709906,
+    "seen": 1792668871.1234841,
+    "ast_hash": "82247aaeeba62eb7a0fd9261d2c17253",
+    "semantic_hash": "82247aaeeba62eb7a0fd9261d2c17253"
+  },
+  "FallbackForge/package.json": {
+    "mtime": 1792663210.5730035,
+    "seen": 1792668871.1234884,
+    "ast_hash": "eeb5e3e527fb3a29c71e7f032696549e",
+    "semantic_hash": "eeb5e3e527fb3a29c71e7f032696549e"
+  },
+  "FallbackForge/src/App.tsx": {
+    "mtime": 1792666280.0973775,
+    "seen": 1792668871.1234934,
+    "ast_hash": "a6248219c0913518b02ccf369f5fa7f0",
+    "semantic_hash": "a6248219c0913518b02ccf369f5fa7f0"
+  },
+  "FallbackForge/src/api.ts": {
+    "mtime": 1792666441.7121565,
+    "seen": 1792668871.1234975,
+    "ast_hash": "976d6d02420541278b74e9538b6a177c",
+    "semantic_hash": "976d6d02420541278b74e9538b6a177c"
+  },
+  "FallbackForge/src/components/Sidebar.tsx": {
+    "mtime": 1792663210.5908568,
+    "seen": 1792668871.1235018,
+    "ast_hash": "20fc99e3323baa9f7b17ca83e314788b",
+    "semantic_hash": "20fc99e3323baa9f7b17ca83e314788b"
+  },
+  "FallbackForge/src/components/TopNav.tsx": {
+    "mtime": 1792663210.5968945,
+    "seen": 1792668871.1235058,
+    "ast_hash": "61fc0fe4944f3c094e8af35f0061bb85",
+    "semantic_hash": "61fc0fe4944f3c094e8af35f0061bb85"
+  },
+  "FallbackForge/src/components/screens/HistoryScreen.tsx": {
+    "mtime": 1792664457.3041353,
+    "seen": 1792668871.1235094,
+    "ast_hash": "556f8710cfcb2b33cb72b91573549bb4",
+    "semantic_hash": "556f8710cfcb2b33cb72b91573549bb4"
+  },
+  "FallbackForge/src/components/screens/OverviewScreen.tsx": {
+    "mtime": 1792663210.602679,
+    "seen": 1792668871.1235142,
+    "ast_hash": "dcd0d7cc074e2137c264fbfb3cbe21cf",
+    "semantic_hash": "dcd0d7cc074e2137c264fbfb3cbe21cf"
+  },
+  "FallbackForge/src/components/screens/PlannerScreen.tsx": {
+    "mtime": 1792666283.6607223,
+    "seen": 1792668871.1235182,
+    "ast_hash": "e6baf59316341e71fb097dde83848975",
+    "semantic_hash": "e6baf59316341e71fb097dde83848975"
+  },
+  "FallbackForge/src/components/screens/SettingsScreen.tsx": {
+    "mtime": 1792666433.3540843,
+    "seen": 1792668871.1235223,
+    "ast_hash": "83cb253c7b5a02441183bb4ef4f61772",
+    "semantic_hash": "83cb253c7b5a02441183bb4ef4f61772"
+  },
+  "FallbackForge/src/components/screens/SimulatorScreen.tsx": {
+    "mtime": 1792663210.612732,
+    "seen": 1792668871.1235275,
+    "ast_hash": "29fb66d01728f9610843d663b5e1a2a5",
+    "semantic_hash": "29fb66d01728f9610843d663b5e1a2a5"
+  },
+  "FallbackForge/src/components/screens/SkillsScreen.tsx": {
+    "mtime": 1792663210.6185145,
+    "seen": 1792668871.1235332,
+    "ast_hash": "fb588938af8316ed4ec3b3ce91ac235c",
+    "semantic_hash": "fb588938af8316ed4ec3b3ce91ac235c"
+  },
+  "FallbackForge/src/data/mockData.ts": {
+    "mtime": 1792663210.6245532,
+    "seen": 1792668871.1235394,
+    "ast_hash": "1bdef72652c7e7363b9ccc308c58e720",
+    "semantic_hash": "1bdef72652c7e7363b9ccc308c58e720"
+  },
+  "FallbackForge/src/main.tsx": {
+    "mtime": 1792663210.6326056,
+    "seen": 1792668871.1235456,
+    "ast_hash": "c54bc4338b4552045d4ff81e948ad087",
+    "semantic_hash": "c54bc4338b4552045d4ff81e948ad087"
+  },
+  "FallbackForge/src/types.ts": {
+    "mtime": 1792664019.031103,
+    "seen": 1792668871.1235516,
+    "ast_hash": "16e7e2d4e9e62e20e61a67999abfeae3",
+    "semantic_hash": "16e7e2d4e9e62e20e61a67999abfeae3"
+  },
+  "FallbackForge/tsconfig.json": {
+    "mtime": 1792663210.642803,
+    "seen": 1792668871.1235597,
+    "ast_hash": "c9ce11f97b614219001b418db5fe4190",
+    "semantic_hash": "c9ce11f97b614219001b418db5fe4190"
+  },
+  "FallbackForge/vite.config.ts": {
+    "mtime": 1792663210.6458073,
+    "seen": 1792668871.1235683,
+    "ast_hash": "73f4702488a6cab080ba164c521eb19c",
+    "semantic_hash": "73f4702488a6cab080ba164c521eb19c"
+  },
+  "test/test_recovery.py": {
+    "mtime": 1792658773.1866047,
+    "seen": 1792668871.1235769,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  }
+}
