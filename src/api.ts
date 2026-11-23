@@ -1,4 +1,4 @@
-const API_URL = "https://fallbackforge1.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export type ApiFailureType =
   | "timeout"
